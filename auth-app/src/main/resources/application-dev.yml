@@ -9,7 +9,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
  #JPA and Hibernate configuration
-  spring:
+#  spring:
 
 # this properties are imp for production in company
 #    hikari :
@@ -26,10 +26,13 @@ spring:
     jpa:
       hibernate:
         ddl-auto: update
-
+      show-sql: true
       properties:
         hibernate:
+          format_sql: true
           dialect: org.hibernate.dialect.MySQLDialect
-      show-sql: true
+  logging:
+    level:
+      org.hibernate.SQL: debug
 
 
