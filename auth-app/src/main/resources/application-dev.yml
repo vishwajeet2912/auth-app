@@ -8,7 +8,20 @@ spring:
     password: Jeet@3558
     driver-class-name: com.mysql.cj.jdbc.Driver
 
- #JPA and Hibernate configuration
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+
+  #JPA and Hibernate configuration
 #  spring:
 
 # this properties are imp for production in company
@@ -23,16 +36,7 @@ spring:
 #      initialization-fail-timeout: 5000
 
 
-    jpa:
-      hibernate:
-        ddl-auto: update
-      show-sql: true
-      properties:
-        hibernate:
-          format_sql: true
-          dialect: org.hibernate.dialect.MySQLDialect
-  logging:
-    level:
-      org.hibernate.SQL: debug
+
+
 
 
