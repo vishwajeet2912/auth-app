@@ -3,11 +3,14 @@ package com.Substring.auth.services;
 import com.Substring.auth.dtos.UserDtos;
 import com.Substring.auth.entities.Provider;
 import com.Substring.auth.entities.User;
+import com.Substring.auth.exceptions.ResourceNotFoundException;
 import com.Substring.auth.repositories.UserRespository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +37,10 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public UserDtos getUserByemail(String email) {
-        return null;
+
+       User user = userRespository.findByEmail(email).orElseThrow(()-> new ResourceNotFoundException("User not found with given id "));
+
+       return modelMapper.map(user, UserDtos.class);
     }
 
     @Override
@@ -54,6 +60,11 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public Iterable<UserDtos> getAllUsers() {
-        return null;
+
+        return userRespository.findAll()
+                .stream()
+                .map(user -> modelMapper.map(user, UserDtos.class))
+                .toList();
     }
+
 }
