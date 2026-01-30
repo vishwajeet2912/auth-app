@@ -27,5 +27,8 @@ public class UserDtos {
     private Instant createdAt =  Instant.now();
     private Instant updatedat = Instant.now();
     private Provider provider = Provider.Local;
+    @Builder.Default
     private Set<RoleDto> roles = new HashSet<>();
+
+    //private Set<RoleDto> roles = new HashSet<>();
 }

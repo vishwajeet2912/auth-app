@@ -5,6 +5,7 @@ import com.Substring.auth.entities.Provider;
 import com.Substring.auth.entities.User;
 import com.Substring.auth.exceptions.ResourceNotFoundException;
 import com.Substring.auth.repositories.UserRespository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ public class UserServiceImpl implements UserService{
     private final ModelMapper modelMapper;
 
     @Override
+    @Transactional
     public UserDtos createUser(UserDtos userDtos) {
 
         if (userDtos.getEmail()== null || userDtos.getEmail().isBlank()){
@@ -59,6 +61,7 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
+    @Transactional
     public Iterable<UserDtos> getAllUsers() {
 
         return userRespository.findAll()
