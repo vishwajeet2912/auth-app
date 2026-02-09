@@ -27,4 +27,10 @@ public class UserContoller {
     public ResponseEntity<Iterable<UserDtos>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
+    //get user by email
+     @GetMapping ("/email/{email}")
+    public ResponseEntity<UserDtos> getUserByEmail(@PathVariable String email){
+        return ResponseEntity.ok(userService.getUserByemail(email));
+
+    }
 }
