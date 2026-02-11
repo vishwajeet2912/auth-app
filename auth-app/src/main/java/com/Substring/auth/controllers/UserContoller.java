@@ -28,9 +28,42 @@ public class UserContoller {
         return ResponseEntity.ok(userService.getAllUsers());
     }
     //get user by email
-     @GetMapping ("/email/{email}")
-    public ResponseEntity<UserDtos> getUserByEmail(@PathVariable String email){
-        return ResponseEntity.ok(userService.getUserByemail(email));
+    // get user by email
 
+    @GetMapping("/email/{email}")
+    public ResponseEntity<UserDtos> getUserByEmail(@PathVariable("email") String email) {
+        return ResponseEntity.ok(userService.getUserByEmail(email));
     }
+    //delete user
+    @DeleteMapping("/{userId}")
+    public void deleteUser(@PathVariable("usedId")String userId){
+        userService.deleteUser(userId);
+    }
+//    //update user
+//    @PutMapping("/{userId}")
+//    public ResponseEntity<UserDtos> updateUser(@RequestBody UserDtos userDtos, @PathVariable("userId") String userId  ){
+//        return ResponseEntity.ok(userService.updateUser(userDtos,userId));
+//    }
+//    // get user by id
+//    @GetMapping("/userId/{userId}")
+//    public ResponseEntity<UserDtos> getUserById(@PathVariable("UserId") String userId) {
+//        return ResponseEntity.ok(userService.getUserById(userId));
+//    }
+// Update user
+@PutMapping("/{userId}")
+public ResponseEntity<UserDtos> updateUser(
+        @RequestBody UserDtos userDtos,
+        @PathVariable("userId") String userId) {
+
+    return ResponseEntity.ok(userService.updateUser(userDtos, userId));
+}
+
+    // Get user by id
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserDtos> getUserById(
+            @PathVariable("userId") String userId) {
+
+        return ResponseEntity.ok(userService.getUserById(userId));
+    }
+
 }

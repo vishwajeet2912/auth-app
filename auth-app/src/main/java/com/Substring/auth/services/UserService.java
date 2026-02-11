@@ -6,7 +6,10 @@ import com.Substring.auth.entities.User;
 public interface UserService {
 
     UserDtos createUser(UserDtos userDtos);
-    UserDtos getUserByemail(String email);
+
+
+    UserDtos getUserByEmail(String email);
+
     UserDtos updateUser(UserDtos userDtos , String userId);
 
     void deleteUser(String userId);
