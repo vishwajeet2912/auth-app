@@ -1,4 +1,4 @@
-package com.Substring.auth.services;
+package com.Substring.auth.services.Impl;
 
 import com.Substring.auth.dtos.UserDtos;
 import com.Substring.auth.entities.Provider;
@@ -6,6 +6,7 @@ import com.Substring.auth.entities.User;
 import com.Substring.auth.exceptions.ResourceNotFoundException;
 import com.Substring.auth.helpers.UserHelper;
 import com.Substring.auth.repositories.UserRespository;
+import com.Substring.auth.services.UserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -15,7 +16,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService{
+public class UserServiceImpl implements UserService {
 
 
     private final UserRespository userRespository;
