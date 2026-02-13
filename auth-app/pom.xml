@@ -30,6 +30,13 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+<!--			 ... other dependency elements ... -->
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-security</artifactId>
+			</dependency>
+
+
 		<!-- JPA -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
