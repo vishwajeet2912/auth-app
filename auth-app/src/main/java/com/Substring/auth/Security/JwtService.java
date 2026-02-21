@@ -8,13 +8,11 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import io.jsonwebtoken.security.Keys;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class JwtService {
@@ -25,25 +23,24 @@ public class JwtService {
     private final String issuer;
 
     public JwtService(
-            @Value("$ {security.jwt.secret}") String secret,
+            @Value("${security.jwt.secret}") String secret,   // ✅ fixed
             @Value("${security.jwt.access-ttl-seconds}")
-                      long accessTtlSeconds,
-                      @Value("${security.jwt.refresh-ttl-seconds }")
-                      long refreshTtlSeconds,
-                      @Value("${security.jwt.issuer}")
-                      String issuer) {
+            long accessTtlSeconds,
+            @Value("${security.jwt.refresh-ttl-seconds}")     // ✅ fixed
+            long refreshTtlSeconds,
+            @Value("${security.jwt.issuer}")
+            String issuer) {
 
-        if(secret == null || secret.length() <64){
+        if(secret == null || secret.length() < 64){
             throw new IllegalArgumentException("Invalid secret");
         }
 
-
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-
         this.accessTtlSeconds = accessTtlSeconds;
         this.refreshTtlSeconds = refreshTtlSeconds;
         this.issuer = issuer;
     }
+
     // generate token
     public String generateAccessToken(User user) {
         Instant now = Instant.now();
@@ -69,6 +66,7 @@ public class JwtService {
                 .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
     }
+
     // generate refresh token
     public String generateRefreshToken(User user, String jti) {
         Instant now = Instant.now();
@@ -83,33 +81,35 @@ public class JwtService {
                 .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
     }
+
     public Jws<Claims> parse(String token) {
-        try {
-            return Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token);
-        } catch (JwtException e) {
-            throw e;
-        }
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token);
     }
 
     public boolean isAccessToken(String token) {
-        Claims c = parse(token).getPayload();
+        Claims c = parse(token).getBody();
         return "access".equals(c.get("typ"));
     }
 
     public boolean isRefreshToken(String token) {
-        Claims c = parse(token).getPayload();
+        Claims c = parse(token).getBody();
         return "refresh".equals(c.get("typ"));
     }
 
     public UUID getUserId(String token) {
-        Claims c = parse(token).getPayload();
+        Claims c = parse(token).getBody();
         return UUID.fromString(c.getSubject());
     }
+
     public String getjti(String token ){
-        return parse(token).getPayload().getId();
+        return parse(token).getBody().getId();
     }
 
+    public List<String> getRole(String token ){
+        Claims c = parse(token).getBody();
+        return (List<String>) c.get("roles");
+    }
 }

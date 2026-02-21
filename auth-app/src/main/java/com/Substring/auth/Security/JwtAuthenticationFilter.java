@@ -1,56 +1,84 @@
 package com.Substring.auth.Security;
 
 import com.Substring.auth.helpers.UserHelper;
+import com.Substring.auth.repositories.UserRespository;
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
+
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-
     private final JwtService jwtService;
+    private final UserRespository userRespository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
-        String header= request.getHeader("Authorization");
-       if(header != null && header.startsWith("Bearer")){
-           //token extract and validate then authentication create and then security context
+        String header = request.getHeader("Authorization");
 
-       String token =    header.substring(7);
-           try{
+        if (header != null && header.startsWith("Bearer ")) {
 
-               Jws<Claims> parse = jwtService.parse(token);
-                Claims payload = parse.getPayload();
-              String userId =   payload.getSubject();
-               UUID userUuid = UserHelper.parseUUID(userId);
+            String token = header.substring(7);
+
+            try {
+                Jws<Claims> parse = jwtService.parse(token);
+                Claims payload = parse.getBody();
+
+                String userId = payload.getSubject();
+                UUID userUuid = UserHelper.parseUUID(userId);
+
+                userRespository.findById(userUuid)
+                        .ifPresent(user -> {
+
+                            List<SimpleGrantedAuthority> authorities =
+                                    user.getRoles().stream()
+                                            .map(role -> new SimpleGrantedAuthority(role.getName()))
+                                            .toList();
+
+                            UsernamePasswordAuthenticationToken authenticationToken =
+                                    new UsernamePasswordAuthenticationToken(
+                                            user.getEmail(),
+                                            null,
+                                            authorities
+                                    );
 
 
 
+                            authenticationToken.setDetails(
+                                    new WebAuthenticationDetailsSource().buildDetails(request)
+                            );
 
-           }catch (ExpiredJwtException e){
-                  e.printStackTrace();
-           }catch (MalformedJwtException e){
-               e.printStackTrace();
-           }catch (JwtException e){
-               e.printStackTrace();
-           }catch (Exception e){
-               e.printStackTrace();
-           }
+                            SecurityContextHolder.getContext()
+                                    .setAuthentication(authenticationToken);
+                        });
 
+            } catch (JwtException e) {
+                e.printStackTrace();
+            }
+        }
 
-       }
-       filterChain.doFilter(request, response);
+        filterChain.doFilter(request, response);
     }
 }
