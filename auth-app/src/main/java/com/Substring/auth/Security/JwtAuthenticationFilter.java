@@ -42,9 +42,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             String token = header.substring(7);
 
+            if(!jwtService.isAccessToken(token)){
+                filterChain.doFilter(request, response);
+                return;
+            }
             try {
                 Jws<Claims> parse = jwtService.parse(token);
                 Claims payload = parse.getBody();
+
+
+
 
                 String userId = payload.getSubject();
                 UUID userUuid = UserHelper.parseUUID(userId);
@@ -52,26 +59,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 userRespository.findById(userUuid)
                         .ifPresent(user -> {
 
-                            List<SimpleGrantedAuthority> authorities =
-                                    user.getRoles().stream()
-                                            .map(role -> new SimpleGrantedAuthority(role.getName()))
-                                            .toList();
+                  if(!user.isEnable()){
+                      try {
+                          filterChain.doFilter(request, response);
+                      } catch (IOException | ServletException e) {
+                          throw new RuntimeException(e);
+                      }
+                      return;
+                  }
 
-                            UsernamePasswordAuthenticationToken authenticationToken =
-                                    new UsernamePasswordAuthenticationToken(
-                                            user.getEmail(),
-                                            null,
-                                            authorities
-                                    );
+                          if (user.isEnable()){
+                              List<SimpleGrantedAuthority> authorities =
+                                      user.getRoles().stream()
+                                              .map(role -> new SimpleGrantedAuthority(role.getName()))
+                                              .toList();
+
+                              UsernamePasswordAuthenticationToken authenticationToken =
+                                      new UsernamePasswordAuthenticationToken(
+                                              user.getEmail(),
+                                              null,
+                                              authorities
+                                      );
 
 
 
-                            authenticationToken.setDetails(
-                                    new WebAuthenticationDetailsSource().buildDetails(request)
-                            );
+                              authenticationToken.setDetails(
+                                      new WebAuthenticationDetailsSource().buildDetails(request)
+                              );
 
-                            SecurityContextHolder.getContext()
-                                    .setAuthentication(authenticationToken);
+                              if (SecurityContextHolder.getContext().getAuthentication() == null)
+                                  SecurityContextHolder.getContext()
+                                          .setAuthentication(authenticationToken);
+
+                          }
                         });
 
             } catch (JwtException e) {
