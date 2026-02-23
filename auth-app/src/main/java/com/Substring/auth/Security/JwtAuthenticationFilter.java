@@ -2,19 +2,19 @@ package com.Substring.auth.Security;
 
 import com.Substring.auth.helpers.UserHelper;
 import com.Substring.auth.repositories.UserRespository;
-import io.jsonwebtoken.*;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -30,6 +30,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserRespository userRespository;
 
+    // ✅ FIXED LOGGER TYPE
+    private static final Logger logger =
+            LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -38,20 +42,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String header = request.getHeader("Authorization");
 
+        logger.info("Authorization header : {}", header);
+
         if (header != null && header.startsWith("Bearer ")) {
 
             String token = header.substring(7);
 
-            if(!jwtService.isAccessToken(token)){
+            if (!jwtService.isAccessToken(token)) {
                 filterChain.doFilter(request, response);
                 return;
             }
+
             try {
+
                 Jws<Claims> parse = jwtService.parse(token);
                 Claims payload = parse.getBody();
-
-
-
 
                 String userId = payload.getSubject();
                 UUID userUuid = UserHelper.parseUUID(userId);
@@ -59,43 +64,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 userRespository.findById(userUuid)
                         .ifPresent(user -> {
 
-                  if(!user.isEnable()){
-                      try {
-                          filterChain.doFilter(request, response);
-                      } catch (IOException | ServletException e) {
-                          throw new RuntimeException(e);
-                      }
-                      return;
-                  }
+                            if (!user.isEnable()) {
+                                return;
+                            }
 
-                          if (user.isEnable()){
-                              List<SimpleGrantedAuthority> authorities =
-                                      user.getRoles().stream()
-                                              .map(role -> new SimpleGrantedAuthority(role.getName()))
-                                              .toList();
+                            List<SimpleGrantedAuthority> authorities =
+                                    user.getRoles().stream()
+                                            .map(role ->
+                                                    new SimpleGrantedAuthority(role.getName()))
+                                            .toList();
 
-                              UsernamePasswordAuthenticationToken authenticationToken =
-                                      new UsernamePasswordAuthenticationToken(
-                                              user.getEmail(),
-                                              null,
-                                              authorities
-                                      );
+                            UsernamePasswordAuthenticationToken authenticationToken =
+                                    new UsernamePasswordAuthenticationToken(
+                                            user.getEmail(),
+                                            null,
+                                            authorities
+                                    );
 
+                            authenticationToken.setDetails(
+                                    new WebAuthenticationDetailsSource()
+                                            .buildDetails(request)
+                            );
 
+                            if (SecurityContextHolder.getContext()
+                                    .getAuthentication() == null) {
 
-                              authenticationToken.setDetails(
-                                      new WebAuthenticationDetailsSource().buildDetails(request)
-                              );
-
-                              if (SecurityContextHolder.getContext().getAuthentication() == null)
-                                  SecurityContextHolder.getContext()
-                                          .setAuthentication(authenticationToken);
-
-                          }
+                                SecurityContextHolder.getContext()
+                                        .setAuthentication(authenticationToken);
+                            }
                         });
 
             } catch (JwtException e) {
-                e.printStackTrace();
+                logger.error("JWT Error: {}", e.getMessage());
             }
         }
 

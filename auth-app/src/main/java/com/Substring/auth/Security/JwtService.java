@@ -3,11 +3,12 @@ package com.Substring.auth.Security;
 import com.Substring.auth.entities.Role;
 import com.Substring.auth.entities.User;
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import io.jsonwebtoken.security.Keys;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -22,27 +23,36 @@ public class JwtService {
     private final long refreshTtlSeconds;
     private final String issuer;
 
+    // ================= CONSTRUCTOR =================
     public JwtService(
-            @Value("${security.jwt.secret}") String secret,   // ✅ fixed
-            @Value("${security.jwt.access-ttl-seconds}")
-            long accessTtlSeconds,
-            @Value("${security.jwt.refresh-ttl-seconds}")     // ✅ fixed
-            long refreshTtlSeconds,
-            @Value("${security.jwt.issuer}")
-            String issuer) {
+            @Value("${security.jwt.secret}") String secret,
+            @Value("${security.jwt.access-ttl-seconds}") long accessTtlSeconds,
+            @Value("${security.jwt.refresh-ttl-seconds}") long refreshTtlSeconds,
+            @Value("${security.jwt.issuer}") String issuer
+    ) {
 
-        if(secret == null || secret.length() < 64){
-            throw new IllegalArgumentException("Invalid secret");
+        // ---- validation ----
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalArgumentException("JWT secret missing");
         }
 
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        if (secret.length() < 64) {
+            throw new IllegalArgumentException(
+                    "JWT secret must be at least 64 characters for HS512");
+        }
+
+        // convert secret → cryptographic key
+        byte[] keyBytes = secret.getBytes();
+        this.key = Keys.hmacShaKeyFor(keyBytes);
+
         this.accessTtlSeconds = accessTtlSeconds;
         this.refreshTtlSeconds = refreshTtlSeconds;
         this.issuer = issuer;
     }
 
-    // generate token
+    // ================= ACCESS TOKEN =================
     public String generateAccessToken(User user) {
+
         Instant now = Instant.now();
 
         List<String> roles = user.getRoles() == null
@@ -67,8 +77,9 @@ public class JwtService {
                 .compact();
     }
 
-    // generate refresh token
+    // ================= REFRESH TOKEN =================
     public String generateRefreshToken(User user, String jti) {
+
         Instant now = Instant.now();
 
         return Jwts.builder()
@@ -82,34 +93,49 @@ public class JwtService {
                 .compact();
     }
 
+    // ================= PARSE TOKEN =================
     public Jws<Claims> parse(String token) {
+
         return Jwts.parser()
                 .verifyWith(key)
                 .build()
                 .parseSignedClaims(token);
     }
 
+    // ================= TOKEN TYPE CHECK =================
     public boolean isAccessToken(String token) {
-        Claims c = parse(token).getBody();
-        return "access".equals(c.get("typ"));
+        Claims claims = parse(token).getBody();
+        return "access".equals(claims.get("typ"));
     }
 
     public boolean isRefreshToken(String token) {
-        Claims c = parse(token).getBody();
-        return "refresh".equals(c.get("typ"));
+        Claims claims = parse(token).getBody();
+        return "refresh".equals(claims.get("typ"));
     }
 
+    // ================= EXTRACT DATA =================
     public UUID getUserId(String token) {
-        Claims c = parse(token).getBody();
-        return UUID.fromString(c.getSubject());
+        Claims claims = parse(token).getBody();
+        return UUID.fromString(claims.getSubject());
     }
 
-    public String getjti(String token ){
+    public String getJti(String token) {
         return parse(token).getBody().getId();
     }
 
-    public List<String> getRole(String token ){
-        Claims c = parse(token).getBody();
-        return (List<String>) c.get("roles");
+    @SuppressWarnings("unchecked")
+    public List<String> getRoles(String token) {
+        Claims claims = parse(token).getBody();
+        return (List<String>) claims.get("roles");
+    }
+
+    // ================= VALIDATION =================
+    public boolean isTokenValid(String token) {
+        try {
+            parse(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 }
