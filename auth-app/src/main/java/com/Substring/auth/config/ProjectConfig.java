@@ -1,3 +1,18 @@
+//package com.Substring.auth.config;
+//
+//import org.modelmapper.ModelMapper;
+//import org.springframework.context.annotation.Bean;
+//import org.springframework.context.annotation.Configuration;
+//
+//@Configuration
+//public class ProjectConfig {
+//
+//    @Bean
+//    public ModelMapper modelMapper (){
+//        return  new ModelMapper();
+//
+//    }
+//}
 package com.Substring.auth.config;
 
 import org.modelmapper.ModelMapper;
@@ -8,8 +23,8 @@ import org.springframework.context.annotation.Configuration;
 public class ProjectConfig {
 
     @Bean
-    public ModelMapper modelMapper (){
-        return  new ModelMapper();
-
+    public ModelMapper modelMapper(){
+        return new ModelMapper();
     }
+
 }
